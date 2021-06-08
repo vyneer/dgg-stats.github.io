@@ -1,0 +1,38 @@
+<channel="destiny.gg">
+  Network = "destiny.gg"
+  LogDir = "logs/"
+  Format = "axur"
+  OutputFile = "out/index.html"
+  TimeOffset = "+0"
+  Maintainer = "vyneer"
+</channel>
+
+<set CacheDir="cache/">
+<set Charset="utf-8">
+<set NFiles="31">
+
+<set ActiveNicks2="50">
+<set DailyActivity="31">
+<set ShowActionLine="0">
+<set ShowActiveTimes="1">
+<set ShowFoulLine="1">
+<set ShowHalfops="0">
+<set ShowKickLine="0">
+<set ShowMostActiveByHour="1">
+<set ShowMostActiveByHourGraph="1">
+<set ShowOps="0">
+<set ShowSmileys="1">
+<set ShowTopics="0">
+<set ShowViolentLines="0">
+<set ShowVoices="0">
+<set ShowWords="1">
+<set TopicHistory="0">
+
+# Bots
+<user nick="Ban" ignore="y">
+<user nick="Bot" ignore="y">
+<user nick="Broadcast" ignore="y">
+<user nick="Subscriber" ignore="y">
+
+# Emotes
+<set IgnoreWords="ALOTOFEMOTES">
