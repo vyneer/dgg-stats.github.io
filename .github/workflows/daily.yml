@@ -1,7 +1,7 @@
 on:
   repository_dispatch:
   schedule:
-    - cron: '01 0 * * *'
+    - cron: '01 20 * * *'
 name: Update
 jobs:
   build:
