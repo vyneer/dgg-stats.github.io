@@ -140,6 +140,7 @@ func GetTextFiles(from, to, dir string) {
 				time.Sleep(time.Second * 10)
 				result, err = downloadFile(client, link)
 				if err == nil {
+					fmt.Printf("We're good! Continuing...\n")
 					succ = true
 					break
 				}
