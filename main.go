@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"runtime"
 	"strings"
 	"time"
 )
@@ -171,15 +169,11 @@ func GetTextFiles(from, to, dir string) {
 			log.Fatalf("failed creating file: %s", err)
 		}
 
-		datawriter := bufio.NewWriter(file)
-
 		for _, data := range finishedResult {
-			_, _ = datawriter.WriteString(data + "\n")
+			_, _ = file.WriteString(data + "\n")
 		}
 
-		datawriter.Flush()
 		file.Close()
-		runtime.GC()
 	}
 }
 
