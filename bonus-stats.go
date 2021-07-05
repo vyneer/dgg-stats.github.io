@@ -124,6 +124,8 @@ func main() {
 			log.Fatal(err)
 		}
 
+		fmt.Printf("Processing %s...\n", f.Name())
+
 		result := strings.Split(string(file), "\n")
 		result = result[0 : len(result)-1]
 		for _, chatLine := range result {
