@@ -31,8 +31,11 @@
 # Bots
 <user nick="Ban" ignore="y">
 <user nick="Bot" ignore="y">
+<user nick="Logs" ignore="y">
 <user nick="Broadcast" ignore="y">
 <user nick="Subscriber" ignore="y">
+<user nick="SubscriberMessage" ignore="y">
+<user nick="RandomFerret" ignore="y">
 
 # Emotes
 <set IgnoreWords="ALOTOFEMOTES">

@@ -1,4 +1,4 @@
 [submodule "pisg"]
 	path = pisg
-	url = https://github.com/pisg/pisg.git
+	url = https://github.com/vyneer/pisg.git
 	branch = master
