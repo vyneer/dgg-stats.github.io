@@ -8,6 +8,7 @@ RUN curl -s 'https://cdn.destiny.gg/emotes/emotes.json' | jq -r '.[].prefix' | p
 RUN mkdir -p logs/; go run ./main.go $(date -uI --date='-31 days') $(date -uI --date='-1 days') logs/
 RUN mkdir -p cache/ out/; chmod +x ./spinner; ./spinner perl ./pisg/pisg logs/
 RUN cp out/index.html index.html
+RUN go build ./bonus-stats.go; ./bonus-stats
 
 FROM nginx:stable-alpine
 LABEL image=dggstats
