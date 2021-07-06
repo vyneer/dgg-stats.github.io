@@ -37,5 +37,11 @@
 <user nick="SubscriberMessage" ignore="y">
 <user nick="RandomFerret" ignore="y">
 
+# Links
+<link url="d.gg" ignore="y">
+<link url="bit.ly" ignore="y">
+<link url="http://d.gg" ignore="y">
+<link url="http://bit.ly" ignore="y">
+
 # Emotes
 <set IgnoreWords="ALOTOFEMOTES">
