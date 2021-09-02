@@ -61,11 +61,14 @@ func downloadFile(client *http.Client, URL Link) ([]string, error) {
 	if re_site.FindAllString(result[len(result)-2], -1) == nil {
 		fmt.Printf("%s seems a little sus, might be a broken file...\nHere's the last line for debugging reasons: %s\n", URL.Date, result[len(result)-2])
 	}
-	if response.ContentLength == int64(data.Len()) {
-		return result[0 : len(result)-1], nil
-	} else {
-		return result[0 : len(result)-1], errors.New("log file doesnt end properly")
-	}
+	/*
+		if response.ContentLength == int64(data.Len()) {
+			return result[0 : len(result)-1], nil
+		} else {
+			return result[0 : len(result)-1], errors.New("log file doesnt end properly")
+		}
+	*/
+	return result[0 : len(result)-1], nil
 	//fmt.Println(noCR[len(noCR)-100 : len(noCR)-1])
 
 }
@@ -131,7 +134,7 @@ func GetTextFiles(from, to, dir string) {
 		var finishedResult []string
 		result, err = downloadFile(client, link)
 		if err != nil {
-			fmt.Printf("Got an error for %s...\n", link.Date)
+			fmt.Printf("Got an error for %s: %s\n", link.Date, err)
 			for i := 0; i < 3; i++ {
 				fmt.Printf("Retrying %s %d time...\n", link.Date, i+1)
 				fmt.Printf("10s timeout...\n")
