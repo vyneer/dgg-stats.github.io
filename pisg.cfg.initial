@@ -37,6 +37,22 @@
 <user nick="SubscriberMessage" ignore="y">
 <user nick="RandomFerret" ignore="y">
 
+# Don't let some usernames get added to referenced nicks (bc they're frequently used words pepeW)
+<user nick="and" refignore="y">
+<user nick="are" refignore="y">
+<user nick="Can" refignore="y">
+<user nick="one" refignore="y">
+<user nick="think" refignore="y">
+<user nick="did" refignore="y">
+<user nick="Game" refignore="y">
+<user nick="Twitch" refignore="y">
+<user nick="holy" refignore="y">
+<user nick="new" refignore="y">
+<user nick="thing" refignore="y">
+<user nick="Better" refignore="y">
+<user nick="watch" refignore="y">
+<user nick="white" refignore="y">
+
 # Links
 <link url="d.gg" ignore="y">
 <link url="bit.ly" ignore="y">
