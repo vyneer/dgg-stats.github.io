@@ -36,6 +36,7 @@
 <user nick="Subscriber" ignore="y">
 <user nick="SubscriberMessage" ignore="y">
 <user nick="RandomFerret" ignore="y">
+<user nick="Emotes" ignore="y">
 
 # Don't let some usernames get added to referenced nicks (bc they're frequently used words pepeW)
 <user nick="and" refignore="y">
