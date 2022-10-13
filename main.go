@@ -192,87 +192,94 @@ func GetTextFiles(from, to, dir string) {
 	links, _ := getOverRustleURLs(from, to)
 
 	for _, link := range links {
-		//time.Sleep(5 * time.Second)
 		date := link.Date.Format("2006-01-02")
-		fmt.Printf("Pulling %s...\n", date)
-		var succ bool = false
-		var vyneer bool = false
-		var err error
-		var result []string
-		var finishedResult []string
-		result, err = downloadFile(client, link)
-		if err != nil {
-			fmt.Printf("Got an error for %s: %s\n", date, err)
-			switch {
-			case errors.Is(err, ErrBadRequest), errors.Is(err, ErrNotFound),
-				errors.Is(err, ErrForbidden), errors.Is(err, ErrTooManyRequests),
-				errors.Is(err, ErrInternalServerError), errors.Is(err, ErrBadGateway),
-				errors.Is(err, ErrServiceUnavailable), os.IsTimeout(err):
-				fmt.Printf("Falling back to vyneer.me logs\n")
-				succ = true
-				vyneer = true
-			default:
-				for i := 0; i < 3; i++ {
-					fmt.Printf("Retrying %s %d time...\n", date, i+1)
-					fmt.Printf("10s timeout...\n")
-					time.Sleep(time.Second * 10)
-					result, err = downloadFile(client, link)
-					if err == nil {
-						fmt.Printf("We're good! Continuing...\n")
-						succ = true
-						break
+		pisglines := fmt.Sprintf("./cache/logs_%s_txt.pisglines", date)
+		_, pisglinesExists := os.Stat(pisglines)
+		pisgstats := fmt.Sprintf("./cache/logs_%s_txt.pisgstats", date)
+		_, pisgstatsExists := os.Stat(pisgstats)
+		if errors.Is(pisglinesExists, os.ErrNotExist) || errors.Is(pisgstatsExists, os.ErrNotExist) {
+			fmt.Printf("Pulling %s...\n", date)
+			var succ bool = false
+			var vyneer bool = false
+			var err error
+			var result []string
+			var finishedResult []string
+			result, err = downloadFile(client, link)
+			if err != nil {
+				fmt.Printf("Got an error for %s: %s\n", date, err)
+				switch {
+				case errors.Is(err, ErrBadRequest), errors.Is(err, ErrNotFound),
+					errors.Is(err, ErrForbidden), errors.Is(err, ErrTooManyRequests),
+					errors.Is(err, ErrInternalServerError), errors.Is(err, ErrBadGateway),
+					errors.Is(err, ErrServiceUnavailable), os.IsTimeout(err):
+					fmt.Printf("Falling back to vyneer.me logs\n")
+					succ = true
+					vyneer = true
+				default:
+					for i := 0; i < 3; i++ {
+						fmt.Printf("Retrying %s %d time...\n", date, i+1)
+						fmt.Printf("10s timeout...\n")
+						time.Sleep(time.Second * 10)
+						result, err = downloadFile(client, link)
+						if err == nil {
+							fmt.Printf("We're good! Continuing...\n")
+							succ = true
+							break
+						}
 					}
 				}
+			} else {
+				succ = true
 			}
-		} else {
-			succ = true
-		}
 
-		if !succ {
-			fmt.Printf("Skipping %s...\n", date)
-			continue
-		}
-
-		if !vyneer {
-			for _, line := range result {
-				index := strings.Index(line, ": ")
-				length := len(line)
-
-				timestamp, _ := time.Parse("2006-01-02 15:04:05 UTC", line[1:24])
-				timestamp1 := timestamp.Format("02/01/2006 @ 15:04:05")
-				username := line[26:index]
-				message := line[index+2 : length]
-				finishedResult = append(finishedResult, fmt.Sprintf("[%s] <%s> %s", timestamp1, username, message))
-			}
-		} else {
-			start := link.Date
-			end := start.Add(24 * time.Hour)
-			logs, err := getDBLines(client, start, end)
-			if err != nil {
-				fmt.Printf("[vyneer] Skipping %s...\n", date)
+			if !succ {
+				fmt.Printf("Skipping %s...\n", date)
 				continue
 			}
-			for _, line := range logs {
-				timestampSplit := strings.SplitN(line.Time, "T", 2)
-				timestampInit, _ := time.Parse("2006-01-02", timestampSplit[0])
-				date := timestampInit.Format("02/01/2006")
-				time := timestampSplit[1][:len(timestampSplit[1])-5]
-				timestamp := fmt.Sprintf("%s @ %s", date, time)
-				finishedResult = append(finishedResult, fmt.Sprintf("[%s] <%s> %s", timestamp, line.Username, line.Message))
+
+			if !vyneer {
+				for _, line := range result {
+					index := strings.Index(line, ": ")
+					length := len(line)
+
+					timestamp, _ := time.Parse("2006-01-02 15:04:05 UTC", line[1:24])
+					timestamp1 := timestamp.Format("02/01/2006 @ 15:04:05")
+					username := line[26:index]
+					message := line[index+2 : length]
+					finishedResult = append(finishedResult, fmt.Sprintf("[%s] <%s> %s", timestamp1, username, message))
+				}
+			} else {
+				start := link.Date
+				end := start.Add(24 * time.Hour)
+				logs, err := getDBLines(client, start, end)
+				if err != nil {
+					fmt.Printf("[vyneer] Skipping %s...\n", date)
+					continue
+				}
+				for _, line := range logs {
+					timestampSplit := strings.SplitN(line.Time, "T", 2)
+					timestampInit, _ := time.Parse("2006-01-02", timestampSplit[0])
+					date := timestampInit.Format("02/01/2006")
+					time := timestampSplit[1][:len(timestampSplit[1])-5]
+					timestamp := fmt.Sprintf("%s @ %s", date, time)
+					finishedResult = append(finishedResult, fmt.Sprintf("[%s] <%s> %s", timestamp, line.Username, line.Message))
+				}
 			}
+
+			file, err := os.OpenFile(fmt.Sprintf("%s%s.txt", dir, date), os.O_CREATE|os.O_WRONLY, 0644)
+
+			if err != nil {
+				log.Fatalf("failed creating file: %s", err)
+			}
+
+			for _, data := range finishedResult {
+				_, _ = file.WriteString(data + "\n")
+			}
+
+			file.Close()
+		} else {
+			fmt.Printf("Found %s in cache, skipping\n", date)
 		}
-
-		file, err := os.OpenFile(fmt.Sprintf("%s%s.txt", dir, date), os.O_CREATE|os.O_WRONLY, 0644)
-
-		if err != nil {
-			log.Fatalf("failed creating file: %s", err)
-		}
-
-		for _, data := range finishedResult {
-			_, _ = file.WriteString(data + "\n")
-		}
-
-		file.Close()
 	}
 }
 
