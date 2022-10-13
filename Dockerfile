@@ -1,13 +1,23 @@
-FROM golang:alpine as builder
+FROM golang:alpine as downloader-builder
+LABEL stage=downloader-builder
+LABEL image=dggstats-build
+WORKDIR /app
+COPY main.go .
+RUN apk add git
+RUN git clone https://github.com/vyneer/pisg
+RUN GOOS=linux GARCH=amd64 CGO_ENABLED=0 go build -o downloader -v main.go
+
+FROM perl:slim-threaded-bullseye as builder
 LABEL stage=builder
 LABEL image=dggstats
 WORKDIR /app
-COPY . .
-RUN apk add --update bash ncurses coreutils perl make wget jq curl sed perl-app-cpanminus && rm -rf /var/cache/apk/*
 RUN cpanm URI::Find::Schemeless
-RUN curl -s 'https://cdn.destiny.gg/emotes/emotes.json' | jq -r '.[].prefix' | paste -sd" " - | ( read emotes; sed "s/ALOTOFEMOTES/$emotes/" pisg.cfg.initial > pisg.cfg )
-RUN mkdir -p logs/; go run ./main.go $(date -uI --date='-31 days') $(date -uI --date='-1 days') logs/
-RUN mkdir -p cache/ out/; chmod +x ./spinner; ./spinner perl ./pisg/pisg logs/
+COPY --from=downloader-builder /app/downloader .
+COPY --from=downloader-builder /app/pisg ./pisg
+COPY ./cache ./
+COPY pisg.cfg.initial .
+RUN mkdir -p logs/; ./downloader $(date -uI --date='-1 days') $(date -uI --date='-1 days') logs/
+RUN mkdir -p cache/ out/; perl ./pisg/pisg logs/ 2>&1
 RUN cp out/index.html index.html
 
 FROM nginx:stable-alpine
