@@ -31,6 +31,7 @@ var ErrTooManyRequests = errors.New("429 Too Many Requests")
 var ErrInternalServerError = errors.New("500 Internal Server Error")
 var ErrBadGateway = errors.New("502 Bad Gateway")
 var ErrServiceUnavailable = errors.New("503 Service Unavailable")
+var ErrMovedTemporarily = errors.New("302 Moved Temporarily")
 
 type Emote struct {
 	Prefix string
@@ -64,25 +65,23 @@ func downloadFile(client *http.Client, URL Link) ([]string, error) {
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
-		if response.StatusCode != http.StatusOK {
-			switch response.StatusCode {
-			case http.StatusBadRequest:
-				return result, ErrBadRequest
-			case http.StatusNotFound:
-				return result, ErrNotFound
-			case http.StatusForbidden:
-				return result, ErrForbidden
-			case http.StatusTooManyRequests:
-				return result, ErrTooManyRequests
-			case http.StatusInternalServerError:
-				return result, ErrInternalServerError
-			case http.StatusBadGateway:
-				return result, ErrBadGateway
-			case http.StatusServiceUnavailable:
-				return result, ErrServiceUnavailable
-			default:
-				return result, errors.New(response.Status)
-			}
+		switch response.StatusCode {
+		case http.StatusBadRequest:
+			return result, ErrBadRequest
+		case http.StatusNotFound:
+			return result, ErrNotFound
+		case http.StatusForbidden:
+			return result, ErrForbidden
+		case http.StatusTooManyRequests:
+			return result, ErrTooManyRequests
+		case http.StatusInternalServerError:
+			return result, ErrInternalServerError
+		case http.StatusBadGateway:
+			return result, ErrBadGateway
+		case http.StatusServiceUnavailable:
+			return result, ErrServiceUnavailable
+		default:
+			return result, errors.New(response.Status)
 		}
 	}
 
@@ -207,7 +206,7 @@ func GetTextFiles(from, to, dir string) {
 			case errors.Is(err, ErrBadRequest), errors.Is(err, ErrNotFound),
 				errors.Is(err, ErrForbidden), errors.Is(err, ErrTooManyRequests),
 				errors.Is(err, ErrInternalServerError), errors.Is(err, ErrBadGateway),
-				errors.Is(err, ErrServiceUnavailable), os.IsTimeout(err):
+				errors.Is(err, ErrServiceUnavailable), errors.Is(err, ErrMovedTemporarily), os.IsTimeout(err):
 				fmt.Printf("Falling back to vyneer.me logs\n")
 				succ = true
 				vyneer = true
@@ -320,6 +319,9 @@ func SwapEmotes() {
 }
 
 func main() {
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return ErrMovedTemporarily
+	}
 	re_site = regexp.MustCompile(pattern)
 	args := os.Args[1:]
 
