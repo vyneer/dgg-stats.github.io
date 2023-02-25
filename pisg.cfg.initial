@@ -56,6 +56,10 @@
 <user nick="Never" refignore="y">
 <user nick="Actually" refignore="y">
 <user nick="Had" refignore="y">
+<user nick="Right" refignore="y">
+<user nick="Only" refignore="y">
+<user nick="take" refignore="y">
+<user nick="let" refignore="y">
 
 # Links
 <link url="d.gg" ignore="y">
