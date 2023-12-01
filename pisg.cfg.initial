@@ -61,6 +61,10 @@
 <user nick="take" refignore="y">
 <user nick="let" refignore="y">
 <user nick="the" refignore="y">
+<user nick="for" refignore="y">
+<user nick="they" refignore="y">
+<user nick="have" refignore="y">
+<user nick="with" refignore="y">
 
 # Links
 <link url="d.gg" ignore="y">
