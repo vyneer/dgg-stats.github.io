@@ -65,6 +65,7 @@
 <user nick="they" refignore="y">
 <user nick="have" refignore="y">
 <user nick="with" refignore="y">
+#REFIGNORE_REPLACE
 
 # Links
 <link url="d.gg" ignore="y">

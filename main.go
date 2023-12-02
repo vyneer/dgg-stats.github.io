@@ -275,25 +275,29 @@ func GetTextFiles(from, to, dir string) {
 	}
 }
 
-func SwapEmotes() {
+func SwapEmotes(s string) string {
 	req, _ := http.NewRequest("GET", "https://cdn.destiny.gg/emotes/emotes.json", nil)
 	response, err := client.Do(req)
 	if err != nil {
 		log.Panicf("couldn't download emotes, panicking")
 	}
 	defer response.Body.Close()
+
 	if response.StatusCode != http.StatusOK {
 		log.Panicf("couldn't download emotes, panicking")
 	}
+
 	b, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Panicf("couldn't download emotes, panicking")
 	}
+
 	var emotes = []Emote{}
 	err = json.Unmarshal(b, &emotes)
 	if err != nil {
 		log.Panicf("couldn't unmarshal emotes, panicking")
 	}
+
 	var resultingString string
 	for i, emote := range emotes {
 		if i != len(emotes)-1 {
@@ -302,17 +306,48 @@ func SwapEmotes() {
 			resultingString += emote.Prefix
 		}
 	}
+
+	replaced := strings.Replace(s, "ALOTOFEMOTES", resultingString, 1)
+
+	return replaced
+}
+
+func GenerateIgnores(s string) string {
+	file, err := os.ReadFile("top-250-words.txt")
+	if err != nil {
+		log.Panicf("couldn't open pisg.cfg.initial, panicking")
+	}
+	words := strings.Split(string(file), "\n")
+
+	var resultingString string
+	for i, word := range words {
+		if i != len(words)-1 {
+			resultingString += fmt.Sprintf("<user nick=\"%s\" refignore=\"y\">\n", word)
+		} else {
+			resultingString += fmt.Sprintf("<user nick=\"%s\" refignore=\"y\">", word)
+		}
+	}
+
+	replaced := strings.Replace(s, "#REFIGNORE_REPLACE", resultingString, 1)
+
+	return replaced
+}
+
+func GenerateConfig()  {
 	file, err := os.ReadFile("pisg.cfg.initial")
 	if err != nil {
 		log.Panicf("couldn't open pisg.cfg.initial, panicking")
 	}
 	fileString := string(file)
-	replaced := strings.Replace(fileString, "ALOTOFEMOTES", resultingString, 1)
+
+	fileString = SwapEmotes(fileString)
+	fileString = GenerateIgnores(fileString)
+
 	newFile, err := os.OpenFile("pisg.cfg", os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Panicf("couldn't create pisg.cfg, panicking")
 	}
-	_, err = newFile.WriteString(replaced)
+	_, err = newFile.WriteString(fileString)
 	if err != nil {
 		log.Panicf("couldn't write into pisg.cfg, panicking")
 	}
@@ -325,6 +360,6 @@ func main() {
 	re_site = regexp.MustCompile(pattern)
 	args := os.Args[1:]
 
-	SwapEmotes()
+	GenerateConfig()
 	GetTextFiles(args[0], args[1], args[2])
 }
