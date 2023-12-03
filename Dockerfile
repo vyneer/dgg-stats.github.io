@@ -15,6 +15,7 @@ RUN cpanm URI::Find::Schemeless
 COPY --from=downloader-builder /app/downloader .
 COPY --from=downloader-builder /app/pisg ./pisg
 COPY ./cache ./cache
+COPY top-250-words.txt .
 COPY pisg.cfg.initial .
 RUN mkdir -p logs/; ./downloader $(date -uI --date='-31 days') $(date -uI --date='-1 days') logs/
 RUN mkdir -p cache/ out/; perl ./pisg/pisg logs/

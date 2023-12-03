@@ -315,7 +315,7 @@ func SwapEmotes(s string) string {
 func GenerateIgnores(s string) string {
 	file, err := os.ReadFile("top-250-words.txt")
 	if err != nil {
-		log.Panicf("couldn't open pisg.cfg.initial, panicking")
+		log.Panicf("couldn't open top-250-words.txt, panicking")
 	}
 	words := strings.Split(string(file), "\n")
 
@@ -333,7 +333,7 @@ func GenerateIgnores(s string) string {
 	return replaced
 }
 
-func GenerateConfig()  {
+func GenerateConfig() {
 	file, err := os.ReadFile("pisg.cfg.initial")
 	if err != nil {
 		log.Panicf("couldn't open pisg.cfg.initial, panicking")
