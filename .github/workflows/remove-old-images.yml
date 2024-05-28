@@ -5,10 +5,6 @@ on:
   schedule:
   - cron: '25 4 * * *'
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   remove-old-images:
     runs-on: ubuntu-latest
@@ -18,5 +14,5 @@ jobs:
         with:
           delete-only-untagged-versions: false
           min-versions-to-keep: 8
-          package-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          package-name: 'dgg-stats.github.io'
           package-type: container
