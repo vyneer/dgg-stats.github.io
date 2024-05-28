@@ -6,16 +6,17 @@ on:
   - cron: '25 4 * * *'
 
 env:
+  REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  purge-cache:
+  remove-old-images:
     runs-on: ubuntu-latest
     steps:
       - name: Delete all untagged container versions
         uses: actions/delete-package-versions@v5
         with:
           delete-only-untagged-versions: false
-          min-versions-to-keep: 10
-          package-name: ${{ env.IMAGE_NAME }}
+          min-versions-to-keep: 8
+          package-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           package-type: container
