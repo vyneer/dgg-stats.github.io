@@ -1,0 +1,98 @@
+name: Create stats page image
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '5 1 * * *'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  create-stats-page:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Checkout Pisg
+        uses: actions/checkout@v3
+        with:
+          repository: vyneer/pisg
+          path: ./pisg
+          submodules: recursive
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
+          cache: false
+
+      - uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: "5.38"
+
+      - name: Install URI module 
+        run: cpanm URI::Find::Schemeless
+
+      - name: Create logs dir
+        run: mkdir -p logs/
+
+      - name: Run downloader
+        env:
+          LOGS_URL: ${{ vars.LOGS_URL }}
+        run: go run main.go $(date -uI --date='-31 days') $(date -uI --date='-1 days') logs/
+
+      - name: Set yesterday's date
+        run: echo "YESTERDAYS_DATE=$(date -uI --date='-1 days')" >> $GITHUB_ENV
+
+      - name: Create cache dir
+        run: mkdir -p cache/
+
+      - name: Restore cached stats
+        id: cache-stats-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ./cache
+          key: dgg-stats-cache-${{ env.YESTERDAYS_DATE }}
+
+      - name: Create out dir
+        run: mkdir -p out/
+
+      - name: Run pisg
+        run: perl ./pisg/pisg logs/
+
+      - name: Set today's date
+        run: echo "TODAYS_DATE=$(date -uI)" >> $GITHUB_ENV
+
+      - name: Save stats
+        id: cache-stats-save
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ./cache
+          key: dgg-stats-cache-${{ env.TODAYS_DATE }}
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

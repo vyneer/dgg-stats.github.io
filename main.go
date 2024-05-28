@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,11 +36,6 @@ type Emote struct {
 	Prefix string
 }
 
-type Link struct {
-	Date time.Time
-	Text string
-}
-
 type VyneerLog struct {
 	Time     string
 	Username string
@@ -50,56 +44,6 @@ type VyneerLog struct {
 
 var re_site *regexp.Regexp
 var pattern string = `23\:[0-5][0-9]\:[0-5][0-9]`
-
-// from here https://medium.com/@dhanushgopinath/concurrent-http-downloads-using-go-32fecfa1ed27
-func downloadFile(client *http.Client, URL Link) ([]string, error) {
-	var result []string
-	req, _ := http.NewRequest("GET", string(URL.Text), nil)
-	var response *http.Response
-	var err error
-
-	req, _ = http.NewRequest("GET", string(URL.Text), nil)
-	response, err = client.Do(req)
-	if err != nil {
-		return result, err
-	}
-	defer response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		switch response.StatusCode {
-		case http.StatusBadRequest:
-			return result, ErrBadRequest
-		case http.StatusNotFound:
-			return result, ErrNotFound
-		case http.StatusForbidden:
-			return result, ErrForbidden
-		case http.StatusTooManyRequests:
-			return result, ErrTooManyRequests
-		case http.StatusInternalServerError:
-			return result, ErrInternalServerError
-		case http.StatusBadGateway:
-			return result, ErrBadGateway
-		case http.StatusServiceUnavailable:
-			return result, ErrServiceUnavailable
-		default:
-			return result, errors.New(response.Status)
-		}
-	}
-
-	data := new(bytes.Buffer)
-	_, err = io.Copy(data, response.Body)
-	if err != nil {
-		return result, err
-	}
-
-	// carriage returns break the bonus stats python script and could affect the pisg results
-	noCR := strings.Replace(data.String(), "\r", "", -1)
-	result = strings.Split(noCR, "\n")
-	if re_site.FindAllString(result[len(result)-2], -1) == nil {
-		fmt.Printf("%s seems a little sus, might be a broken file...\nHere's the last line for debugging reasons: %s\n", URL.Date, result[len(result)-2])
-	}
-
-	return result[0 : len(result)-1], nil
-}
 
 // rangeDate returns a date range function over start date to end date inclusive.
 // After the end of the range, the range function returns a zero date,
@@ -120,31 +64,28 @@ func rangeDate(start, end time.Time) func() time.Time {
 	}
 }
 
-func getOverRustleURLs(from, to string) ([]Link, error) {
+func getDateSlice(from, to string) ([]time.Time, error) {
 	startDate, _ := time.Parse("2006-01-02", from)
 	endDate, _ := time.Parse("2006-01-02", to)
-	var links []Link
+	var links []time.Time
 
 	for rd := rangeDate(startDate, endDate); ; {
 		date := rd()
 		if date.IsZero() {
 			break
 		}
-		links = append(links, Link{
-			date,
-			fmt.Sprintf("https://dgg.overrustlelogs.net/Destinygg chatlog/%s/%s.txt", date.Format("January 2006"), date.Format("2006-01-02")),
-		})
+		links = append(links, date)
 	}
 	var err error
 
 	return links, err
 }
 
-func getDBLines(client *http.Client, from, to time.Time) ([]VyneerLog, error) {
+func getDBLines(client *http.Client, logsUrl string, from, to time.Time) ([]VyneerLog, error) {
 	fromFormatted := from.Format("2006-01-02T15:04:05Z")
 	toFormatted := to.Format("2006-01-02T15:04:05Z")
 
-	url := fmt.Sprintf("https://vyneer.me/tools/rawlogs?from=%s&to=%s", fromFormatted, toFormatted)
+	url := fmt.Sprintf("%s?from=%s&to=%s", logsUrl, fromFormatted, toFormatted)
 
 	req, _ := http.NewRequest("GET", url, nil)
 	response, err := client.Do(req)
@@ -184,84 +125,35 @@ func getDBLines(client *http.Client, from, to time.Time) ([]VyneerLog, error) {
 	return logs, nil
 }
 
-// GetTextFiles downloads logs from OverRustleLogs
+// GetTextFiles downloads logs
 // starting and ending at specific timestamps
 // and returns an array of chatlines.
-func GetTextFiles(from, to, dir string) {
-	links, _ := getOverRustleURLs(from, to)
+func GetTextFiles(url, from, to, dir string) {
+	dates, _ := getDateSlice(from, to)
 
-	for _, link := range links {
+	for _, start := range dates {
 		//time.Sleep(5 * time.Second)
-		date := link.Date.Format("2006-01-02")
-		fmt.Printf("Pulling %s...\n", date)
-		var succ bool = false
-		var vyneer bool = false
+		formatted := start.Format("2006-01-02")
+		fmt.Printf("Pulling %s...\n", formatted)
 		var err error
-		var result []string
 		var finishedResult []string
-		result, err = downloadFile(client, link)
-		if err != nil {
-			fmt.Printf("Got an error for %s: %s\n", date, err)
-			switch {
-			case errors.Is(err, ErrBadRequest), errors.Is(err, ErrNotFound),
-				errors.Is(err, ErrForbidden), errors.Is(err, ErrTooManyRequests),
-				errors.Is(err, ErrInternalServerError), errors.Is(err, ErrBadGateway),
-				errors.Is(err, ErrServiceUnavailable), errors.Is(err, ErrMovedTemporarily), os.IsTimeout(err):
-				fmt.Printf("Falling back to vyneer.me logs\n")
-				succ = true
-				vyneer = true
-			default:
-				for i := 0; i < 3; i++ {
-					fmt.Printf("Retrying %s %d time...\n", date, i+1)
-					fmt.Printf("10s timeout...\n")
-					time.Sleep(time.Second * 10)
-					result, err = downloadFile(client, link)
-					if err == nil {
-						fmt.Printf("We're good! Continuing...\n")
-						succ = true
-						break
-					}
-				}
-			}
-		} else {
-			succ = true
-		}
 
-		if !succ {
-			fmt.Printf("Skipping %s...\n", date)
+		end := start.Add(24 * time.Hour)
+		logs, err := getDBLines(client, url, start, end)
+		if err != nil {
+			fmt.Printf("[vyneer] Skipping %s...\n", formatted)
 			continue
 		}
-
-		if !vyneer {
-			for _, line := range result {
-				index := strings.Index(line, ": ")
-				length := len(line)
-
-				timestamp, _ := time.Parse("2006-01-02 15:04:05 UTC", line[1:24])
-				timestamp1 := timestamp.Format("02/01/2006 @ 15:04:05")
-				username := line[26:index]
-				message := line[index+2 : length]
-				finishedResult = append(finishedResult, fmt.Sprintf("[%s] <%s> %s", timestamp1, username, message))
-			}
-		} else {
-			start := link.Date
-			end := start.Add(24 * time.Hour)
-			logs, err := getDBLines(client, start, end)
-			if err != nil {
-				fmt.Printf("[vyneer] Skipping %s...\n", date)
-				continue
-			}
-			for _, line := range logs {
-				timestampSplit := strings.SplitN(line.Time, "T", 2)
-				timestampInit, _ := time.Parse("2006-01-02", timestampSplit[0])
-				date := timestampInit.Format("02/01/2006")
-				time := timestampSplit[1][:len(timestampSplit[1])-5]
-				timestamp := fmt.Sprintf("%s @ %s", date, time)
-				finishedResult = append(finishedResult, fmt.Sprintf("[%s] <%s> %s", timestamp, line.Username, line.Message))
-			}
+		for _, line := range logs {
+			timestampSplit := strings.SplitN(line.Time, "T", 2)
+			timestampInit, _ := time.Parse("2006-01-02", timestampSplit[0])
+			date := timestampInit.Format("02/01/2006")
+			time := timestampSplit[1][:len(timestampSplit[1])-5]
+			timestamp := fmt.Sprintf("%s @ %s", date, time)
+			finishedResult = append(finishedResult, fmt.Sprintf("[%s] <%s> %s", timestamp, line.Username, line.Message))
 		}
 
-		file, err := os.OpenFile(fmt.Sprintf("%s%s.txt", dir, date), os.O_CREATE|os.O_WRONLY, 0644)
+		file, err := os.OpenFile(fmt.Sprintf("%s%s.txt", dir, formatted), os.O_CREATE|os.O_WRONLY, 0644)
 
 		if err != nil {
 			log.Fatalf("failed creating file: %s", err)
@@ -360,6 +252,10 @@ func main() {
 	re_site = regexp.MustCompile(pattern)
 	args := os.Args[1:]
 
-	GenerateConfig()
-	GetTextFiles(args[0], args[1], args[2])
+	if u, ok := os.LookupEnv("LOGS_URL"); ok {
+		GenerateConfig()
+		GetTextFiles(u, args[0], args[1], args[2])
+	} else {
+		log.Panic("no logs url provided")
+	}
 }
