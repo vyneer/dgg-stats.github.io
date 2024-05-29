@@ -1,5 +1,3 @@
-FROM nginx:stable-alpine
+FROM lipanski/docker-static-website:latest
 LABEL image=dggstats
 COPY out/index.html .
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
