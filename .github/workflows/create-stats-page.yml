@@ -58,6 +58,9 @@ jobs:
             ./cache
           key: dgg-stats-cache-${{ env.YESTERDAYS_DATE }}
 
+      - name: Remove old cache files
+        run: find ./cache/ -type f -name "*$(date -uI --date='-32 days')*" -delete
+
       - name: Create out dir
         run: mkdir -p out/
 
@@ -67,7 +70,7 @@ jobs:
       - name: Set today's date
         run: echo "TODAYS_DATE=$(date -uI)" >> $GITHUB_ENV
 
-      - name: Save stats
+      - name: Save stats to cache
         id: cache-stats-save
         uses: actions/cache/save@v4
         with:
