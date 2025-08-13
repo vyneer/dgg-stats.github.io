@@ -210,7 +210,7 @@ func GenerateWordIgnores(s string) string {
 		log.Panicf("couldn't open stop-words.txt, panicking")
 	}
 
-	return fmt.Sprintf("%s\n<set IgnoredWords=\"%s\">", s, strings.ReplaceAll(string(file), "\n", " "))
+	return fmt.Sprintf("%s\n<set IgnoreWords=\"%s\">", s, strings.ReplaceAll(string(file), "\n", " "))
 }
 
 func GenerateNickIgnores(s string) string {
