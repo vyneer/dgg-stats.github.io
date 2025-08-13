@@ -204,7 +204,16 @@ func SwapEmotes(s string) string {
 	return replaced
 }
 
-func GenerateIgnores(s string) string {
+func GenerateWordIgnores(s string) string {
+	file, err := os.ReadFile("stop-words.txt")
+	if err != nil {
+		log.Panicf("couldn't open stop-words.txt, panicking")
+	}
+
+	return fmt.Sprintf("%s\n<set IgnoredWords=\"%s\">", s, strings.ReplaceAll(string(file), "\n", " "))
+}
+
+func GenerateNickIgnores(s string) string {
 	file, err := os.ReadFile("top-250-words.txt")
 	if err != nil {
 		log.Panicf("couldn't open top-250-words.txt, panicking")
@@ -233,7 +242,8 @@ func GenerateConfig() {
 	fileString := string(file)
 
 	fileString = SwapEmotes(fileString)
-	fileString = GenerateIgnores(fileString)
+	fileString = GenerateNickIgnores(fileString)
+	fileString = GenerateWordIgnores(fileString)
 
 	newFile, err := os.OpenFile("pisg.cfg", os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
