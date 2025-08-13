@@ -167,7 +167,7 @@ func GetTextFiles(url, from, to, dir string) {
 	}
 }
 
-func SwapEmotes(s string) string {
+func GetEmotes() string {
 	req, _ := http.NewRequest("GET", "https://cdn.destiny.gg/emotes/emotes.json", nil)
 	response, err := client.Do(req)
 	if err != nil {
@@ -199,18 +199,16 @@ func SwapEmotes(s string) string {
 		}
 	}
 
-	replaced := strings.Replace(s, "ALOTOFEMOTES", resultingString, 1)
-
-	return replaced
+	return resultingString
 }
 
-func GenerateWordIgnores(s string) string {
+func GenerateWordIgnores() string {
 	file, err := os.ReadFile("stop-words.txt")
 	if err != nil {
 		log.Panicf("couldn't open stop-words.txt, panicking")
 	}
 
-	return fmt.Sprintf("%s\n<set IgnoreWords=\"%s\">", s, strings.ReplaceAll(string(file), "\n", " "))
+	return strings.TrimSpace(strings.ReplaceAll(string(file), "\n", " "))
 }
 
 func GenerateNickIgnores(s string) string {
@@ -241,9 +239,10 @@ func GenerateConfig() {
 	}
 	fileString := string(file)
 
-	fileString = SwapEmotes(fileString)
+	ignoredWords := GetEmotes() + " " + GenerateWordIgnores()
+
+	fileString = strings.Replace(fileString, "ALOTOFEMOTES", ignoredWords, 1)
 	fileString = GenerateNickIgnores(fileString)
-	fileString = GenerateWordIgnores(fileString)
 
 	newFile, err := os.OpenFile("pisg.cfg", os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
