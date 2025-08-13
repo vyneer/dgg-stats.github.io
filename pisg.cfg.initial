@@ -76,5 +76,5 @@
 <link url="http://bit.ly" ignore="y">
 <link url="http://destiny.gg" ignore="y">
 
-# Emotes
-<set IgnoreWords="ALOTOFEMOTES">
+# Ignored Words
+<set IgnoreWords="#IGNORE_REPLACE">

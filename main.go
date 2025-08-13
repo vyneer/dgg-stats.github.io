@@ -241,7 +241,7 @@ func GenerateConfig() {
 
 	ignoredWords := GetEmotes() + " " + GenerateWordIgnores()
 
-	fileString = strings.Replace(fileString, "ALOTOFEMOTES", ignoredWords, 1)
+	fileString = strings.Replace(fileString, "#IGNORE_REPLACE", ignoredWords, 1)
 	fileString = GenerateNickIgnores(fileString)
 
 	newFile, err := os.OpenFile("pisg.cfg", os.O_CREATE|os.O_WRONLY, 0644)
